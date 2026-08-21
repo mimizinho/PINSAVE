@@ -360,6 +360,7 @@
         <div>
           <strong id="errorTitle">Não encontramos o vídeo</strong>
           <p id="errorText">Confira se o link é de um Pin com vídeo e tente novamente.</p>
+          <p id="errorDetail" style="margin:8px 0 0; font-size:10.5px; font-family: monospace; color:#a97a72; word-break:break-word; display:none;"></p>
         </div>
       </div>
     </div>
@@ -406,6 +407,7 @@
   const errorPanel = document.getElementById('errorPanel');
   const errorTitle = document.getElementById('errorTitle');
   const errorText = document.getElementById('errorText');
+  const errorDetail = document.getElementById('errorDetail');
   const resultPanel = document.getElementById('resultPanel');
   const preview = document.getElementById('preview');
   const qualityBadge = document.getElementById('qualityBadge');
@@ -424,10 +426,16 @@
     saveNote.classList.remove('show');
   }
 
-  function showError(title, text){
+  function showError(title, text, detail){
     hideAll();
     errorTitle.textContent = title;
     errorText.textContent = text;
+    if(detail){
+      errorDetail.textContent = detail;
+      errorDetail.style.display = 'block';
+    }else{
+      errorDetail.style.display = 'none';
+    }
     errorPanel.classList.add('show');
   }
 
@@ -467,32 +475,38 @@
   });
 
   // Multiple independent proxy services, tried in order, so a single
-  // service being down or origin-restricted does not block the app.
+  // service being down, rate-limited, or blocked by Pinterest's bot
+  // protection does not block the app entirely.
   function buildProxyAttempts(url){
     const enc = encodeURIComponent(url);
     return [
-      'https://api.codetabs.com/v1/proxy/?quest=' + enc,
-      'https://api.allorigins.win/raw?url=' + enc,
-      'https://api.cors.lol/url=' + url,
-      'https://thingproxy.freeboard.io/fetch/' + url
+      { url: 'https://r.jina.ai/' + url, headers: { 'X-Return-Format': 'html' } },
+      { url: 'https://api.codetabs.com/v1/proxy/?quest=' + enc },
+      { url: 'https://api.allorigins.win/raw?url=' + enc },
+      { url: 'https://api.cors.lol/url=' + url },
+      { url: 'https://thingproxy.freeboard.io/fetch/' + url }
     ];
   }
 
   async function fetchWithProxies(url){
     const attempts = buildProxyAttempts(url);
     let lastErr = null;
-    for(const attemptUrl of attempts){
+    for(const attempt of attempts){
       try{
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 9000);
-        const res = await fetch(attemptUrl, { cache: 'no-store', signal: controller.signal });
+        const timeout = setTimeout(() => controller.abort(), 12000);
+        const res = await fetch(attempt.url, {
+          cache: 'no-store',
+          signal: controller.signal,
+          headers: attempt.headers || {}
+        });
         clearTimeout(timeout);
-        if(!res.ok) throw new Error('status ' + res.status);
+        if(!res.ok) throw new Error(attempt.url.split('/')[2] + ' respondeu ' + res.status);
         const text = await res.text();
         if(text && text.length > 200) return text;
-        lastErr = new Error('resposta vazia');
+        lastErr = new Error(attempt.url.split('/')[2] + ' devolveu conteúdo vazio');
       }catch(e){
-        lastErr = e;
+        lastErr = new Error((attempt.url.split('/')[2] || 'proxy') + ': ' + (e.message || e.name || 'falhou'));
       }
     }
     throw lastErr || new Error('falha desconhecida');
@@ -569,7 +583,7 @@
       preview.src = found.url;
       resultPanel.classList.add('show');
     }catch(e){
-      showError('Serviço indisponível no momento', 'O intermediário usado para acessar o Pinterest não respondeu. Aguarde um pouco e tente novamente.');
+      showError('Serviço indisponível no momento', 'Nenhum dos intermediários conseguiu acessar o Pinterest agora. Aguarde um pouco e tente de novo.', e && e.message ? e.message : String(e));
     }finally{
       setLoading(false);
     }
