@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>PinSave — Baixar vídeos do Pinterest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #fbf3f2;
+    --card: #ffffff;
+    --ink: #362a2e;
+    --ink-soft: #8a7a7e;
+    --rose: #e8828f;
+    --rose-deep: #d9636f;
+    --rose-pale: #f6d9dc;
+    --thread: #efe0e0;
+    --ok: #6f9c82;
+    --err: #c85a52;
+    --radius: 22px;
+    --radius-sm: 14px;
+    --shadow: 0 20px 45px -25px rgba(90, 40, 45, 0.35);
+  }
+
+  *{ box-sizing: border-box; }
+
+  html,body{
+    margin:0; padding:0; min-height:100%;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Manrope', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body{
+    background-image:
+      radial-gradient(circle at 12% 8%, rgba(232,130,143,0.14), transparent 40%),
+      radial-gradient(circle at 90% 85%, rgba(232,130,143,0.10), transparent 45%);
+    min-height: 100dvh;
+    display:flex;
+    justify-content:center;
+    padding: 0 0 48px;
+  }
+
+  .frame{
+    width:100%;
+    max-width: 460px;
+    padding: 34px 22px 0;
+  }
+
+  /* ---------- Header ---------- */
+  header{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-bottom: 30px;
+  }
+
+  .mark{
+    width:42px; height:42px;
+    border-radius: 13px;
+    background: linear-gradient(155deg, var(--rose) 0%, var(--rose-deep) 100%);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 10px 22px -10px rgba(217,99,111,0.55);
+    flex-shrink:0;
+  }
+  .mark svg{ width:22px; height:22px; }
+
+  .headtext h1{
+    font-family:'Fraunces', serif;
+    font-size: 20px;
+    font-weight: 600;
+    margin:0;
+    letter-spacing: -0.01em;
+  }
+  .headtext p{
+    margin: 2px 0 0;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+  }
+
+  /* ---------- Input card ---------- */
+  .card{
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 22px;
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(217,99,111,0.06);
+  }
+
+  .field-label{
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--rose-deep);
+    margin: 0 0 10px 2px;
+  }
+
+  .input-row{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    background: var(--bg);
+    border: 1.5px solid var(--thread);
+    border-radius: var(--radius-sm);
+    padding: 6px 6px 6px 14px;
+    transition: border-color .18s ease, box-shadow .18s ease;
+  }
+  .input-row:focus-within{
+    border-color: var(--rose);
+    box-shadow: 0 0 0 4px rgba(232,130,143,0.14);
+  }
+
+  .input-row svg{ flex-shrink:0; width:18px; height:18px; color: var(--ink-soft); }
+
+  #pinUrl{
+    flex:1;
+    border:none;
+    background:transparent;
+    outline:none;
+    font-family:'Manrope', sans-serif;
+    font-size: 14.5px;
+    color: var(--ink);
+    padding: 11px 0;
+    min-width:0;
+  }
+  #pinUrl::placeholder{ color: #b8a9ac; }
+
+  .icon-btn{
+    border:none;
+    background:transparent;
+    width:32px; height:32px;
+    border-radius:9px;
+    display:flex; align-items:center; justify-content:center;
+    color: var(--ink-soft);
+    cursor:pointer;
+    flex-shrink:0;
+    transition: background .15s ease, color .15s ease;
+  }
+  .icon-btn:hover{ background: var(--rose-pale); color: var(--rose-deep); }
+  .icon-btn svg{ width:17px; height:17px; }
+
+  .hint{
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    margin: 10px 2px 0;
+    line-height:1.5;
+  }
+
+  .go-btn{
+    width:100%;
+    margin-top: 16px;
+    border:none;
+    border-radius: var(--radius-sm);
+    padding: 15px 18px;
+    background: linear-gradient(135deg, var(--rose) 0%, var(--rose-deep) 100%);
+    color:#fff;
+    font-family:'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 14.5px;
+    letter-spacing: 0.01em;
+    display:flex; align-items:center; justify-content:center; gap:9px;
+    cursor:pointer;
+    box-shadow: 0 14px 26px -14px rgba(217,99,111,0.7);
+    transition: transform .12s ease, box-shadow .12s ease, opacity .15s ease;
+  }
+  .go-btn:active{ transform: scale(0.98); }
+  .go-btn:disabled{ opacity:0.55; cursor: default; box-shadow:none; }
+  .go-btn svg{ width:17px; height:17px; }
+
+  .go-btn .spinner{ animation: spin 0.85s linear infinite; }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+
+  /* ---------- Status / result area ---------- */
+  .stage{
+    margin-top: 18px;
+  }
+
+  .panel{
+    border-radius: var(--radius);
+    padding: 20px;
+    display:none;
+    animation: rise .32s cubic-bezier(.2,.8,.2,1);
+  }
+  .panel.show{ display:block; }
+
+  @keyframes rise{
+    from{ opacity:0; transform: translateY(10px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+
+  .panel.error{
+    background: #fbebe9;
+    border: 1px solid #f3cfc9;
+  }
+  .panel.error .row{ display:flex; gap:12px; align-items:flex-start; }
+  .panel.error svg{ width:20px; height:20px; color: var(--err); flex-shrink:0; margin-top:1px; }
+  .panel.error strong{ display:block; font-size:13.5px; margin-bottom:3px; }
+  .panel.error p{ margin:0; font-size:12.5px; color:#8a5a53; line-height:1.5; }
+
+  .panel.result{
+    background: var(--card);
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(217,99,111,0.06);
+    padding:0;
+    overflow:hidden;
+  }
+
+  .video-wrap{
+    position:relative;
+    background:#1c1416;
+    aspect-ratio: 9/13;
+    max-height: 420px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .video-wrap video{
+    width:100%; height:100%; object-fit:contain; display:block;
+  }
+
+  .badge{
+    position:absolute; top:12px; left:12px;
+    background: rgba(20,15,16,0.55);
+    backdrop-filter: blur(6px);
+    color:#fff;
+    font-size:10.5px;
+    font-weight:700;
+    letter-spacing:0.05em;
+    padding: 5px 10px;
+    border-radius: 999px;
+  }
+
+  .result-body{ padding: 18px; }
+
+  .result-title{
+    font-family:'Fraunces', serif;
+    font-size:15.5px;
+    font-weight:600;
+    margin:0 0 3px;
+  }
+  .result-sub{
+    font-size:12px;
+    color: var(--ink-soft);
+    margin:0 0 16px;
+  }
+
+  .actions{ display:flex; gap:10px; }
+
+  .primary-dl{
+    flex:1;
+    border:none;
+    border-radius: var(--radius-sm);
+    padding: 13px 14px;
+    background: linear-gradient(135deg, var(--rose) 0%, var(--rose-deep) 100%);
+    color:#fff;
+    font-weight:700;
+    font-size:13.5px;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    cursor:pointer;
+  }
+  .primary-dl svg{ width:16px; height:16px; }
+
+  .secondary-btn{
+    border: 1.5px solid var(--thread);
+    background: var(--bg);
+    color: var(--ink);
+    border-radius: var(--radius-sm);
+    width: 46px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  .secondary-btn svg{ width:16px; height:16px; color: var(--ink-soft); }
+
+  .save-note{
+    display:none;
+    margin-top: 12px;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    background: var(--rose-pale);
+    padding: 10px 12px;
+    border-radius: 10px;
+    line-height:1.5;
+  }
+  .save-note.show{ display:block; }
+
+  /* ---------- Empty state / footer ---------- */
+  .footer-note{
+    margin-top: 26px;
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+    padding: 0 4px;
+  }
+  .footer-note svg{ width:16px; height:16px; color: var(--ink-soft); flex-shrink:0; margin-top:1px; }
+  .footer-note p{ margin:0; font-size:11.5px; color: var(--ink-soft); line-height:1.55; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="frame">
+
+  <header>
+    <div class="mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3c-4.5 0-7.5 3-7.5 7 0 3 1.6 5 4 5.8"></path>
+        <path d="M12 3c4.5 0 7.5 3 7.5 7 0 4.4-3 7.5-6.7 7.5-1.1 0-1.9-.4-2.5-1"></path>
+        <line x1="9.3" y1="21" x2="12.4" y2="10.5"></line>
+      </svg>
+    </div>
+    <div class="headtext">
+      <h1>PinSave</h1>
+      <p>Salve seus próprios vídeos do Pinterest</p>
+    </div>
+  </header>
+
+  <div class="card">
+    <p class="field-label">Link do Pin</p>
+    <div class="input-row">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.2 1.2"></path>
+        <path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.1-1.1"></path>
+      </svg>
+      <input id="pinUrl" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="cole aqui o link do pin...">
+      <button class="icon-btn" id="pasteBtn" title="Colar" aria-label="Colar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="8" y="2" width="8" height="4" rx="1"></rect>
+          <path d="M9 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3"></path>
+        </svg>
+      </button>
+    </div>
+    <p class="hint" id="hintText">Abra o vídeo no app do Pinterest, toque em compartilhar e escolha copiar link. Depois cole ele aqui.</p>
+
+    <button class="go-btn" id="goBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3v13"></path>
+        <path d="M7 11l5 5 5-5"></path>
+        <path d="M4 20h16"></path>
+      </svg>
+      <span id="goLabel">Encontrar vídeo</span>
+    </button>
+  </div>
+
+  <div class="stage">
+
+    <div class="panel error" id="errorPanel">
+      <div class="row">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"></circle>
+          <line x1="12" y1="8" x2="12" y2="13"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <div>
+          <strong id="errorTitle">Não encontramos o vídeo</strong>
+          <p id="errorText">Confira se o link é de um Pin com vídeo e tente novamente.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel result" id="resultPanel">
+      <div class="video-wrap">
+        <span class="badge" id="qualityBadge">HD</span>
+        <video id="preview" playsinline controls></video>
+      </div>
+      <div class="result-body">
+        <p class="result-title">Vídeo pronto</p>
+        <p class="result-sub">Toque em salvar para baixar no seu dispositivo.</p>
+        <div class="actions">
+          <button class="primary-dl" id="downloadBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3v13"></path>
+              <path d="M7 11l5 5 5-5"></path>
+              <path d="M4 20h16"></path>
+            </svg>
+            Salvar vídeo
+          </button>
+          <button class="secondary-btn" id="resetBtn" title="Novo link" aria-label="Novo link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12a9 9 0 1 1 3 6.7"></path>
+              <path d="M3 21v-6h6"></path>
+            </svg>
+          </button>
+        </div>
+        <p class="save-note" id="saveNote">Não conseguimos salvar direto. O vídeo foi aberto em outra aba — toque e segure sobre ele e escolha salvar.</p>
+      </div>
+    </div>
+
+  </div>
+
+
+</div>
+
+<script>
+(function(){
+  const pinUrlInput = document.getElementById('pinUrl');
+  const pasteBtn = document.getElementById('pasteBtn');
+  const goBtn = document.getElementById('goBtn');
+  const goLabel = document.getElementById('goLabel');
+  const errorPanel = document.getElementById('errorPanel');
+  const errorTitle = document.getElementById('errorTitle');
+  const errorText = document.getElementById('errorText');
+  const resultPanel = document.getElementById('resultPanel');
+  const preview = document.getElementById('preview');
+  const qualityBadge = document.getElementById('qualityBadge');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const saveNote = document.getElementById('saveNote');
+
+  const SPINNER_SVG = '<svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3a9 9 0 1 0 9 9"></path></svg>';
+  const ARROW_SVG = document.querySelector('#goBtn svg').outerHTML;
+
+  let currentVideoUrl = '';
+
+  function hideAll(){
+    errorPanel.classList.remove('show');
+    resultPanel.classList.remove('show');
+    saveNote.classList.remove('show');
+  }
+
+  function showError(title, text){
+    hideAll();
+    errorTitle.textContent = title;
+    errorText.textContent = text;
+    errorPanel.classList.add('show');
+  }
+
+  function setLoading(isLoading){
+    goBtn.disabled = isLoading;
+    goLabel.textContent = isLoading ? 'Procurando...' : 'Encontrar vídeo';
+    goBtn.querySelector('svg').outerHTML = isLoading ? SPINNER_SVG : ARROW_SVG;
+  }
+
+  const hintText = document.getElementById('hintText');
+  const defaultHint = hintText.textContent;
+  let hintTimer = null;
+
+  function flashHint(message){
+    clearTimeout(hintTimer);
+    hintText.textContent = message;
+    hintText.style.color = 'var(--rose-deep)';
+    hintTimer = setTimeout(function(){
+      hintText.textContent = defaultHint;
+      hintText.style.color = '';
+    }, 3800);
+  }
+
+  pasteBtn.addEventListener('click', async function(){
+    if(!navigator.clipboard || !navigator.clipboard.readText){
+      flashHint('Colar automático indisponível aqui. Toque e segure o campo e escolha colar.');
+      pinUrlInput.focus();
+      return;
+    }
+    try{
+      const text = await navigator.clipboard.readText();
+      if(text){ pinUrlInput.value = text.trim(); }
+    }catch(e){
+      flashHint('Colar automático indisponível aqui. Toque e segure o campo e escolha colar.');
+      pinUrlInput.focus();
+    }
+  });
+
+  // Multiple independent proxy services, tried in order, so a single
+  // service being down or origin-restricted does not block the app.
+  function buildProxyAttempts(url){
+    const enc = encodeURIComponent(url);
+    return [
+      'https://api.codetabs.com/v1/proxy/?quest=' + enc,
+      'https://api.allorigins.win/raw?url=' + enc,
+      'https://api.cors.lol/url=' + url,
+      'https://thingproxy.freeboard.io/fetch/' + url
+    ];
+  }
+
+  async function fetchWithProxies(url){
+    const attempts = buildProxyAttempts(url);
+    let lastErr = null;
+    for(const attemptUrl of attempts){
+      try{
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 9000);
+        const res = await fetch(attemptUrl, { cache: 'no-store', signal: controller.signal });
+        clearTimeout(timeout);
+        if(!res.ok) throw new Error('status ' + res.status);
+        const text = await res.text();
+        if(text && text.length > 200) return text;
+        lastErr = new Error('resposta vazia');
+      }catch(e){
+        lastErr = e;
+      }
+    }
+    throw lastErr || new Error('falha desconhecida');
+  }
+
+  function extractVideoUrl(html){
+    const candidates = new Set();
+
+    // og:video style meta tags
+    const metaMatches = html.matchAll(/<meta[^>]+property="og:video(?::secure_url)?"[^>]+content="([^"]+)"/g);
+    for(const m of metaMatches){ candidates.add(m[1]); }
+
+    // JSON-embedded pinimg video urls (escaped slashes)
+    const jsonMatches = html.matchAll(/https:\\?\/\\?\/v[0-9]?\.pinimg\.com\\?\/videos\\?\/[^"'\\ ]+\.mp4/g);
+    for(const m of jsonMatches){
+      candidates.add(m[0].replace(/\\\//g, '/'));
+    }
+
+    // application/ld+json contentUrl
+    const ldMatches = html.matchAll(/"contentUrl"\s*:\s*"([^"]+\.mp4[^"]*)"/g);
+    for(const m of ldMatches){ candidates.add(m[1].replace(/\\\//g, '/')); }
+
+    if(candidates.size === 0) return null;
+
+    const list = Array.from(candidates);
+    const hd = list.find(u => /720P/i.test(u));
+    if(hd) return { url: hd, quality: '720P' };
+
+    list.sort((a,b) => b.length - a.length);
+    const q = /([0-9]{3,4}P)/i.exec(list[0]);
+    return { url: list[0], quality: q ? q[1].toUpperCase() : 'HD' };
+  }
+
+  async function resolvePin(rawUrl){
+    let url = rawUrl.trim();
+    if(!/^https?:\/\//i.test(url)){ url = 'https://' + url; }
+
+    const html = await fetchWithProxies(url);
+    let found = extractVideoUrl(html);
+
+    // pin.it short links sometimes need the redirected canonical url from the html
+    if(!found){
+      const canonicalMatch = html.match(/<link[^>]+rel="canonical"[^>]+href="([^"]+)"/);
+      if(canonicalMatch && canonicalMatch[1] !== url){
+        const html2 = await fetchWithProxies(canonicalMatch[1]);
+        found = extractVideoUrl(html2);
+      }
+    }
+    return found;
+  }
+
+  async function handleSearch(){
+    const raw = pinUrlInput.value.trim();
+    hideAll();
+
+    if(!raw){
+      showError('Cole um link primeiro', 'Copie o link do Pin no Pinterest e cole no campo acima.');
+      return;
+    }
+    if(!/pinterest\.|pin\.it/i.test(raw)){
+      showError('Link não reconhecido', 'Use um link do pinterest.com ou pin.it.');
+      return;
+    }
+
+    setLoading(true);
+    try{
+      const found = await resolvePin(raw);
+      if(!found){
+        showError('Não encontramos o vídeo', 'Esse Pin pode não ter vídeo, ser privado, ou o Pinterest mudou algo. Tente outro link.');
+        return;
+      }
+      currentVideoUrl = found.url;
+      qualityBadge.textContent = found.quality;
+      preview.src = found.url;
+      resultPanel.classList.add('show');
+    }catch(e){
+      showError('Serviço indisponível no momento', 'O intermediário usado para acessar o Pinterest não respondeu. Aguarde um pouco e tente novamente.');
+    }finally{
+      setLoading(false);
+    }
+  }
+
+  async function handleDownload(){
+    if(!currentVideoUrl) return;
+    saveNote.classList.remove('show');
+
+    try{
+      const res = await fetch(currentVideoUrl, { mode: 'cors' });
+      if(!res.ok) throw new Error('status ' + res.status);
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objectUrl;
+      a.download = 'pinterest-video-' + Date.now() + '.mp4';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 4000);
+    }catch(e){
+      window.open(currentVideoUrl, '_blank');
+      saveNote.classList.add('show');
+    }
+  }
+
+  function reset(){
+    hideAll();
+    pinUrlInput.value = '';
+    currentVideoUrl = '';
+    preview.pause();
+    preview.removeAttribute('src');
+    preview.load();
+    pinUrlInput.focus();
+  }
+
+  goBtn.addEventListener('click', handleSearch);
+  pinUrlInput.addEventListener('keydown', function(e){ if(e.key === 'Enter') handleSearch(); });
+  downloadBtn.addEventListener('click', handleDownload);
+  resetBtn.addEventListener('click', reset);
+})();
+</script>
+
+</body>
+</html>
