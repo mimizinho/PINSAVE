@@ -212,8 +212,8 @@
   .video-wrap{
     position:relative;
     background:#1c1416;
-    aspect-ratio: 9/13;
-    max-height: 420px;
+    aspect-ratio: 1/1;
+    max-height: 320px;
     display:flex;
     align-items:center;
     justify-content:center;
@@ -589,14 +589,41 @@
     }
   }
 
+  async function fetchAsBlob(videoUrl){
+    // Try a direct fetch first (works if the CDN allows cross-origin reads).
+    try{
+      const res = await fetch(videoUrl, { mode: 'cors' });
+      if(res.ok) return await res.blob();
+    }catch(e){ /* fall through to proxied attempt */ }
+
+    // Pinterest's video CDN usually blocks cross-origin blob reads, so
+    // route the download through a proxy that adds permissive CORS headers.
+    const proxiedAttempts = [
+      'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(videoUrl),
+      'https://api.allorigins.win/raw?url=' + encodeURIComponent(videoUrl)
+    ];
+    for(const attemptUrl of proxiedAttempts){
+      try{
+        const res = await fetch(attemptUrl, { mode: 'cors' });
+        if(res.ok){
+          const blob = await res.blob();
+          if(blob && blob.size > 10000) return blob;
+        }
+      }catch(e){ /* try next */ }
+    }
+    return null;
+  }
+
   async function handleDownload(){
     if(!currentVideoUrl) return;
     saveNote.classList.remove('show');
+    downloadBtn.disabled = true;
+    const originalLabel = downloadBtn.innerHTML;
+    downloadBtn.innerHTML = downloadBtn.innerHTML.replace('Salvar vídeo', 'Salvando...');
 
     try{
-      const res = await fetch(currentVideoUrl, { mode: 'cors' });
-      if(!res.ok) throw new Error('status ' + res.status);
-      const blob = await res.blob();
+      const blob = await fetchAsBlob(currentVideoUrl);
+      if(!blob) throw new Error('sem blob');
       const objectUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = objectUrl;
@@ -608,6 +635,9 @@
     }catch(e){
       window.open(currentVideoUrl, '_blank');
       saveNote.classList.add('show');
+    }finally{
+      downloadBtn.disabled = false;
+      downloadBtn.innerHTML = originalLabel;
     }
   }
 
